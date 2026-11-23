@@ -1,21 +1,64 @@
-import {Suspense,Component,useMemo,useRef,type ReactNode} from 'react'
+import {Suspense,Component,useEffect,useMemo,useRef,type ReactNode} from 'react'
 import {Canvas,useFrame} from '@react-three/fiber'
 import {OrbitControls,useGLTF} from '@react-three/drei'
-import {Color,Group,Mesh,MeshStandardMaterial} from 'three'
+import {Box3,BufferAttribute,Group,Mesh,MeshPhysicalMaterial,Vector3} from 'three'
 import {useTracking} from '../store/tracking'
-export type Metric='Heart'|'Lungs'|'Brain'|'Sleep'|'Energy'|'Steps'
-type Motion=(group:Group,value:number,time:number)=>void
+export type Metric='Heart'|'Lungs'|'Brain'
+type Motion=(phase:number)=>number
 export const animations:Record<Metric,Motion>={
- Heart:(g,v,t)=>g.scale.setScalar(1+.08*Math.sin(t*v/60*2*Math.PI)),
- Lungs:(g,v,t)=>g.scale.set(1+.06*Math.sin(t*v/60*2*Math.PI),1,1+.04*Math.sin(t*v/60*2*Math.PI)),
- Brain:(g,v)=>g.traverse(o=>{if(o instanceof Mesh){const m=o.material as MeshStandardMaterial;m.emissive.set('#805cfa');m.emissiveIntensity=v/100}}),
- Sleep:(g,v)=>g.traverse(o=>{if(o instanceof Mesh)o.material.color.copy(new Color('#534caa').lerp(new Color('#94dcc9'),Math.min(1,v/10)))}),
- Energy:()=>{},Steps:(g,v,t)=>{g.position.y=.08*Math.abs(Math.sin(t*Math.min(4,v/3000)))}}
-function Asset({path}:{path:string}){const {scene}=useGLTF(path);const copy=useMemo(()=>scene.clone(true),[scene]);return <primitive object={copy}/>}
-type Props={metricKey:Metric;modelPath?:string;animate:Motion;value?:number;summary:string}
-function Body({metricKey,modelPath,animate,value}:Props){const group=useRef<Group>(null),time=useRef(0);useFrame((_,dt)=>{const g=group.current;if(!g)return
- const v=metricKey==='Heart'?useTracking.getState().bpm:value
- if(v==null||!Number.isFinite(v)){g.scale.setScalar(1);return}time.current+=Math.min(dt,.1);g.rotation.y+=dt*.09;animate(g,v,time.current)})
- return <group ref={group}>{modelPath?<Asset path={modelPath}/>:<group rotation={[0,0,Math.PI/2]}><mesh><torusGeometry args={[.95,.12,12,72]}/><meshStandardMaterial color="#284347"/></mesh><mesh><torusGeometry args={[.95,.14,12,72,Math.PI*2*(value??0)/100]}/><meshStandardMaterial color="#73e9b4"/></mesh></group>}</group>}
-class Boundary extends Component<{children:ReactNode},{failed:boolean}>{state={failed:false};static getDerivedStateFromError(){return {failed:true}};render(){return this.state.failed?<p>3D rendering unavailable. The readings are shown below.</p>:this.props.children}}
-export function MetricScene(props:Props){return <div className="scene" role="img" aria-label={props.summary}><Boundary><Canvas dpr={[1,1.5]} camera={{position:[0,.18,4.5],fov:39}} gl={{antialias:true,alpha:true}}><ambientLight intensity={1.2}/><directionalLight position={[3,5,4]} intensity={3}/><pointLight position={[-2,0,2]} color="#ff779f" intensity={9}/><directionalLight position={[0,2,-3]} color="#83ece2" intensity={4}/><Suspense fallback={null}><Body key={props.metricKey} {...props}/></Suspense><OrbitControls enablePan={false} enableZoom={false} enableDamping/></Canvas></Boundary></div>}
+ Heart:p=>p<.42?Math.pow(Math.sin(Math.PI*p/.42),1.45):0,
+ Lungs:p=>.5-.5*Math.cos(2*Math.PI*p),
+ Brain:()=>0
+}
+type Props={metricKey:Metric;modelPath:string;animate:Motion;value?:number;summary:string}
+function Tissue({metricKey,modelPath,animate,value}:Props){
+ const {scene}=useGLTF(modelPath)
+ const phase=useRef(0)
+ const group=useMemo(()=>{
+  scene.updateMatrixWorld(true)
+  const box=new Box3().setFromObject(scene),center=box.getCenter(new Vector3()),size=box.getSize(new Vector3())
+  const scale=2.5/Math.max(size.x,size.y,size.z),result=new Group()
+  scene.traverse(obj=>{
+   if(!(obj instanceof Mesh)||!obj.geometry)return
+   const name=(obj.name+' '+obj.parent?.name+' '+obj.material?.name).toLowerCase()
+   const geom=obj.geometry.clone().applyMatrix4(obj.matrixWorld).translate(-center.x,-center.y,-center.z).scale(scale,scale,scale)
+   const vein=/vein|vena|pulmonary.trunk|pulmonary.arter/.test(name),artery=/arter|aort/.test(name)
+   const color=metricKey==='Brain'?'#c89086':metricKey==='Lungs'?'#ae655f':vein?'#504264':artery?'#b24e40':'#923c3e'
+   const material=new MeshPhysicalMaterial({color,roughness:.39,clearcoat:.62,clearcoatRoughness:.22})
+   material.onBeforeCompile=shader=>{
+    shader.vertexShader='varying vec3 tissuePosition;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ntissuePosition=position;')
+    shader.fragmentShader='varying vec3 tissuePosition;\n'+shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
+      vec3 q=tissuePosition;
+      float grain=sin(q.y*165.+q.x*81.+sin(q.z*19.+q.y*8.)*4.);
+      float broad=sin(q.x*11.+sin(q.z*9.))*sin(q.y*13.);
+      diffuseColor.rgb*=1.+.035*grain+.055*broad;`)
+   }
+   if(metricKey==='Heart'){
+    const pos=geom.attributes.position
+    const offsets=new Float32Array(pos.count*3)
+    for(let i=0;i<pos.count;i++){
+     const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i)
+     const weight=Math.min(1,Math.max(0,(.8-y)/1.6)),angle=.145*weight, squeeze=1-.075*weight
+     offsets[i*3]=(x*Math.cos(angle)-z*Math.sin(angle))*squeeze-x
+     offsets[i*3+1]=.13*weight
+     offsets[i*3+2]=(z*Math.cos(angle)+x*Math.sin(angle))*squeeze-z
+    }
+    geom.morphTargetsRelative=true
+    geom.morphAttributes.position=[new BufferAttribute(offsets,3)]
+   }
+   const mesh=new Mesh(geom,material);result.add(mesh)
+  });return result
+ },[scene,metricKey])
+ useEffect(()=>()=>{group.traverse(obj=>{if(obj instanceof Mesh){obj.geometry.dispose();obj.material.dispose()}})},[group])
+ useFrame((_,dt)=>{
+  const rate=metricKey==='Heart'?useTracking.getState().bpm:value
+  if(rate!=null)phase.current=(phase.current+Math.min(dt,.1)*rate/60)%1
+  const strength=rate==null?0:animate(phase.current)
+  if(metricKey==='Heart')for(const child of group.children){const influences=(child as Mesh).morphTargetInfluences;if(influences)influences[0]=strength}
+  if(metricKey==='Lungs')group.scale.set(1+.045*strength,1+.028*strength,1+.07*strength)
+  if(metricKey==='Brain')for(const child of group.children){const m=(child as Mesh).material as MeshPhysicalMaterial;m.emissive.setHex(0x673433);m.emissiveIntensity=(value??0)/140}
+ })
+ return <primitive object={group}/>
+}
+class Boundary extends Component<{children:ReactNode},{failed:boolean}>{state={failed:false};static getDerivedStateFromError(){return {failed:true}};render(){return this.state.failed?<p>3D rendering unavailable. Readings remain available below.</p>:this.props.children}}
+export function MetricScene(props:Props){return <div className="scene" role="img" aria-label={props.summary}><Boundary key={props.metricKey}><Canvas dpr={[1,2]} camera={{position:[0,.12,4.4],fov:39}} gl={{antialias:true,alpha:true}}><hemisphereLight args={['#ffe6d6','#6f414e',1.15]}/><directionalLight position={[-2,3,4]} intensity={3.1}/><directionalLight position={[2,1,-2]} color="#a9cbdf" intensity={3.4}/><pointLight position={[1,-.4,2]} color="#ffb59e" intensity={4}/><Suspense fallback={null}><Tissue {...props}/></Suspense><OrbitControls enablePan={false} enableDamping minDistance={2.2} maxDistance={6} autoRotate autoRotateSpeed={.35}/></Canvas></Boundary></div>}
