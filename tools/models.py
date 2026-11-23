@@ -5,7 +5,7 @@ import urllib.request
 
 repo = 'tejasghalsasi/anatomy-atelier'
 def fetch(url):
-    with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent':'LifeTwin-build'}), timeout=60) as response:
+    with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent':'Lifetime-build'}), timeout=60) as response:
         return response.read()
 tree = json.loads(fetch(f'https://api.github.com/repos/{repo}/git/trees/master?recursive=1'))
 assets = [item['path'] for item in tree['tree'] if item['path'].lower().endswith('.glb')]

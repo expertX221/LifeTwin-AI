@@ -1,4 +1,4 @@
-# LifeTwin AI
+# Lifetime AI
 Heart tracking opens automatically with a clearly labeled 100 Hz demo. Choose USB circuit or Bluetooth watch and press Connect for live acquisition. Disconnect freezes the trace and returns the model to resting scale. The other five tabs provide interactive illustrative controls.
 
 ## Run
@@ -25,4 +25,4 @@ src/components/HeartView.tsx composes the monitor and controls. MetricScene.tsx 
 ## Add a model
 Place a meter-scale, centered GLB in public/models, record its author and license in LICENSES.md, and register its path in HeartView. Extend the Metric union and animations registry, then set the metric range and unit. MetricScene receives metricKey, modelPath, animate and summary. Its frame loop reads live heart rate directly from Zustand. Use a small mesh and a single shared material. The included models can be rebuilt with python tools/models.py.
 
-LifeTwin AI is for personal exploration and education. It is not a medical device and does not diagnose conditions.
+Lifetime AI is for personal exploration and education. It is not a medical device and does not diagnose conditions.
