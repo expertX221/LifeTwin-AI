@@ -1,8 +1,10 @@
 # Lifetime AI
-Heart tracking opens automatically with a clearly labeled 100 Hz demo. Choose USB circuit or Bluetooth watch and press Connect for live acquisition. Disconnect freezes the trace and returns the model to resting scale. The other five tabs provide interactive illustrative controls.
+Heart tracking opens automatically with a clearly labeled 100 Hz demo. Choose USB circuit or Bluetooth watch and press Connect for live acquisition. Disconnect freezes the trace and returns the model to resting scale. Lungs and Brain offer illustrative controls.
+
+[Full foundation, architecture, evaluation and organ production handbook](docs/README.md)
 
 ## Run
-Use Node 22.13 or later. Run npm install, npm run dev, and open the localhost URL. npm test runs Vitest. npm run build type-checks and builds dist. npm run test:portable runs the same analytics cases with the Node standard library.
+Use Node 22.13 or later. Run npm install, npm run dev, and open the localhost URL. npm test runs Vitest. npm run build type-checks and builds the Next.js production app. npm run test:portable runs the same analytics cases with the Node standard library.
 
 ## Circuit
 Use a **classic ESP32 DevKit** and a MAX30102 **breakout documented for 3.3 V input and 3.3 V I²C logic**. The bare IC requires separate rails. With power off, wire:

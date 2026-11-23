@@ -56,7 +56,7 @@ function Tissue({metricKey,modelPath,animate,value}:Props){
   const strength=rate==null?0:animate(phase.current)
   if(metricKey==='Heart')for(const child of group.children){const influences=(child as Mesh).morphTargetInfluences;if(influences)influences[0]=strength}
   if(metricKey==='Lungs')group.scale.set(1+.045*strength,1+.028*strength,1+.07*strength)
-  if(metricKey==='Brain')for(const child of group.children){const m=(child as Mesh).material as MeshPhysicalMaterial;m.emissive.setHex(0x673433);m.emissiveIntensity=(value??0)/140}
+  if(metricKey==='Brain')for(const child of group.children){const m=(child as Mesh).material as MeshPhysicalMaterial;m.emissive.setHex(0x673433);m.emissiveIntensity=(value??0)/140*(.82+.18*Math.sin(phase.current*2*Math.PI))}
  })
  return <primitive object={group}/>
 }

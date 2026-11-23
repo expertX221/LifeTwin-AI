@@ -17,8 +17,8 @@ export function route(input:string){const s=normalize(input)
  return 'general'
 }
 const levels:Record<Locale,string[]>={en:['medium','high'],hi:['मध्यम','उच्च'],te:['మధ్యస్థ','అధిక'],ta:['நடுத்தரம்','உயர்'],ml:['ഇടത്തരം','ഉയർന്ന'],kn:['ಮಧ್ಯಮ','ಹೆಚ್ಚು']}
-export function answer(input:string,l:Locale,region:string,rows:Reading[]){
- const t=languages[l],intent=route(input),done=(s:string)=>s+'\n\n'+t.notice
+export function answer(input:string,l:Locale,region:string,rows:Reading[],modelIntent?:ReturnType<typeof route>){
+ const t=languages[l],base=route(input),intent=base==='safety'||base==='medical'?base:(modelIntent??base),done=(s:string)=>s+'\n\n'+t.notice
  if(intent==='safety')return done(t.urgent+({'India':' · 112','US':' · 911','UK':' · 999'}[region]??'')+'.')
  if(intent==='medical')return done(t.clinician)
  if(intent!=='data')return done(t.help)

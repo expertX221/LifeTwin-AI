@@ -8,8 +8,8 @@
     "test:portable": "node --experimental-strip-types tools/test.mjs",
     "dev": "next dev",
     "build": "vitest run --maxWorkers=1 && next build",
-    "predev": "python tools/models.py",
-    "prebuild": "python3 tools/models.py",
+    "predev": "python tools/models.py && esbuild tools/browser-model.mjs --bundle --format=esm --platform=browser --outfile=public/browser-model.mjs",
+    "prebuild": "python3 tools/models.py && esbuild tools/browser-model.mjs --bundle --format=esm --platform=browser --outfile=public/browser-model.mjs",
     "start": "next start"
   },
   "keywords": [],
@@ -42,6 +42,8 @@
     "tailwindcss": "^3.4.17",
     "postcss": "^8.4.49",
     "autoprefixer": "^10.4.20",
-    "@types/node": "^22.10.0"
+    "@types/node": "^22.10.0",
+    "esbuild": "^0.25.0",
+    "@mlc-ai/web-llm": "^0.2.79"
   }
 }
