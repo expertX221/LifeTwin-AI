@@ -1,0 +1,9 @@
+import {useState} from 'react'
+import {start} from '../store/tracking'
+const board=['3V3','GND','GPIO21','GPIO22'],sensor=['VIN','GND','SDA','SCL']
+const preset=[0,1,2,3],colors=['#ff947f','#b1bdc8','#83d6c4','#d9bf86']
+export function Circuit(){const [w,setW]=useState<number[]>(preset),[pin,setPin]=useState<number|null>(null),[result,setResult]=useState('')
+ const valid=w.every((v,i)=>v===i)
+ function edit(next:number[]){setW(next);setResult('')}
+ return <article className="lab"><div className="cap"><h2>Pulse circuit designer</h2><small>ESP32 / MAX30102</small></div><p>Select an ESP32 pin and then its destination. The starter uses a breakout with onboard pull-ups to 3.3 V.</p><div className="wiring"><div><b>ESP32</b>{board.map((v,i)=><button aria-pressed={i===pin} key={v} onClick={()=>setPin(i)}>{v}</button>)}</div><svg viewBox="0 0 300 160" preserveAspectRatio="none" role="img" aria-label={board.map((b,i)=>b+' to '+(sensor[w[i]]??'unconnected')).join(', ')}>{w.map((v,i)=>v>=0&&<path key={i} d={`M0 ${i*40+20} C140 ${i*40+20},160 ${v*40+20},300 ${v*40+20}`} fill="none" stroke={colors[i]} strokeWidth="2"/>)}</svg><div><b>MAX30102</b>{sensor.map((v,i)=><button key={v} disabled={pin===null} onClick={()=>{if(pin!==null)edit(w.map((n,k)=>k===pin?i:n));setPin(null)}}>{v}</button>)}</div></div>
+ <p>{valid?'Starter wiring complete.':board.filter((_,i)=>w[i]!==i).map(b=>b+' needs '+sensor[board.indexOf(b)]).join(' · ')}</p><div className="inputs"><button onClick={()=>edit([-1,-1,-1,-1])}>Clear wires</button><button onClick={()=>edit(preset)}>Load starter</button><button disabled={!valid} onClick={()=>{void start('Demo sensor');setResult('Wiring check passed. Synthetic pulse simulation selected in Heart tracking.')}}>Test starter circuit</button></div><p role="status">{result}</p></article>}

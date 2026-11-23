@@ -1,0 +1,8 @@
+import {useState} from 'react'
+type Row={timestamp:string;bpm:number;spo2?:number}
+export function WatchFile(){const [rows,setRows]=useState<Row[]>([]),[error,setError]=useState('')
+ async function load(f:File){try{if(f.size>2e6)throw Error('Use a CSV smaller than 2 MB.');const [head,...lines]=(await f.text()).trim().replace(/^\uFEFF/,'').split(/\r?\n/);const keys=head.toLowerCase().split(',').map(s=>s.trim());const ti=keys.indexOf('timestamp'),bi=keys.indexOf('bpm'),oi=keys.indexOf('spo2')
+ if(ti<0||bi<0)throw Error('Expected columns timestamp,bpm and optional spo2.')
+ const data=lines.map(line=>{const v=line.split(',');return {timestamp:v[ti],bpm:Number(v[bi]),spo2:oi>=0&&v[oi]?.trim()?Number(v[oi]):undefined}}).filter(r=>Number.isFinite(Date.parse(r.timestamp))&&r.bpm>=30&&r.bpm<=220).sort((a,b)=>Date.parse(a.timestamp)-Date.parse(b.timestamp))
+ if(!data.length)throw Error('No valid timestamp and BPM pairs found.');setRows(data);setError('')}catch(e){setRows([]);setError(String(e))}}
+ const last=rows.at(-1);return <article className="lab"><h2>Watch export</h2><p>Review historical readings from a tracker export. Use a CSV with timestamp,bpm and optional spo2 columns. <a href="/watch-example.csv" download>Example CSV</a></p><input type="file" accept=".csv,text/csv" aria-label="Import tracker CSV" onChange={e=>{const f=e.target.files?.[0];if(f)void load(f)}}/>{error&&<p role="alert">{error}</p>}{last&&<><p>{rows.length} historical readings · Latest {new Date(last.timestamp).toLocaleString()}</p><div className="number">{last.bpm} <small>BPM</small></div><p>Recorded oxygen {last.spo2&&last.spo2<=100&&last.spo2>0?last.spo2+'%':'unavailable'}</p></>}</article>}
