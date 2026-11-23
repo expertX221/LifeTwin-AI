@@ -1,0 +1,7 @@
+'use client'
+import Link from 'next/link'
+import dynamic from 'next/dynamic'
+import {motion} from 'framer-motion'
+import {ArrowUpRight,Activity,Cpu,MessageCircle} from 'lucide-react'
+const Preview=dynamic(()=>import('../src/components/Preview'),{ssr:false,loading:()=> <p>Loading heart anatomy…</p>})
+export default function Home(){return <><section className="hero"><motion.div initial={{opacity:.4,y:8}} animate={{opacity:1,y:0}}><small>PERSONAL INTELLIGENCE LAB</small><h1>Your signals.<br/><span>Your science.</span></h1><p>Follow a pulse from the sensor on your fingertip to a beating 3D heart. Explore the readings privately, on your own device.</p><div className="actions"><Link className="primary" href="/dashboard">Open dashboard <ArrowUpRight/></Link><Link className="quiet" href="/studio">Hardware Studio</Link></div></motion.div><figure><Preview/><figcaption>Cardiac anatomy <span>Interactive preview</span></figcaption></figure></section><section className="tiles">{[[Activity,'Signal dashboard','Inspect pulse peaks, oxygen estimates and sensor contact.','/dashboard'],[Cpu,'Hardware Studio','Wire an optical sensor, test the design and export firmware.','/studio'],[MessageCircle,'Aether assistant','Ask about your records in six languages.','/agent']].map(([I,t,d,h])=>{const Icon=I as typeof Activity;return <Link key={String(t)} href={String(h)}><Icon/><h2>{String(t)}</h2><p>{String(d)}</p><ArrowUpRight size={18}/></Link>})}</section></>}

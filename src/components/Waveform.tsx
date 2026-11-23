@@ -9,7 +9,7 @@ export function Waveform(){const ref=useRef<HTMLCanvasElement>(null),bpm=useTrac
  const ctx=c.getContext('2d');if(!ctx)return;ctx.setTransform(d,0,0,d,0,0);ctx.clearRect(0,0,w,h);if(!a.length)return
  const vs=a.map(p=>p[s.channel]!),lo=Math.min(...vs),range=Math.max(1,Math.max(...vs)-lo),marks=new Set(s.dots)
  const x=(t:number)=>w*(1-(end-t)/10000),y=(v:number)=>h*.83-h*.64*(v-lo)/range
- ctx.strokeStyle='#68e1c3';ctx.lineWidth=2;ctx.beginPath();a.forEach((p,i)=>{if(!i||p.t-a[i-1].t>250)ctx.moveTo(x(p.t),y(vs[i]));else ctx.lineTo(x(p.t),y(vs[i]))});ctx.stroke()
- ctx.fillStyle='#fbcb90';a.forEach((p,i)=>{if(marks.has(p.t)){ctx.beginPath();ctx.arc(x(p.t),y(vs[i]),3,0,2*Math.PI);ctx.fill()}})};draw();return()=>cancelAnimationFrame(id)},[])
+ ctx.strokeStyle='#39FF14';ctx.lineWidth=2;ctx.beginPath();a.forEach((p,i)=>{if(!i||p.t-a[i-1].t>250)ctx.moveTo(x(p.t),y(vs[i]));else ctx.lineTo(x(p.t),y(vs[i]))});ctx.stroke()
+ ctx.fillStyle='#A8FF78';a.forEach((p,i)=>{if(marks.has(p.t)){ctx.beginPath();ctx.arc(x(p.t),y(vs[i]),3,0,2*Math.PI);ctx.fill()}})};draw();return()=>cancelAnimationFrame(id)},[])
  return <canvas className="wave" ref={ref} aria-label={`Optical pulse waveform. Heart rate ${bpm??'unavailable'} BPM. ${trust}.`}/>}
 
