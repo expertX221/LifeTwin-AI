@@ -11,7 +11,7 @@ tree = json.loads(fetch(f'https://api.github.com/repos/{repo}/git/trees/master?r
 assets = [item['path'] for item in tree['tree'] if item['path'].lower().endswith('.glb')]
 out = pathlib.Path(__file__).resolve().parents[1] / 'public/models'
 out.mkdir(parents=True, exist_ok=True)
-for organ, term in [('heart','heart'), ('lungs','lung'), ('brain','brain')]:
+for organ, term in [('heart','heart'), ('brain','brain')]:
     path = next(path for path in assets if term in pathlib.Path(path).stem.lower())
     data = fetch(f'https://raw.githubusercontent.com/{repo}/{tree["sha"]}/'+urllib.parse.quote(path))
     if data[:4] != b'glTF': raise ValueError(path)

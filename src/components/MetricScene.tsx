@@ -22,8 +22,13 @@ function Tissue({metricKey,modelPath,animate,value}:Props){
    if(!(obj instanceof Mesh)||!obj.geometry)return
    const name=(obj.name+' '+obj.parent?.name+' '+obj.material?.name).toLowerCase()
    const geom=obj.geometry.clone().applyMatrix4(obj.matrixWorld).translate(-center.x,-center.y,-center.z).scale(scale,scale,scale)
+   if(metricKey==='Lungs'){
+    const mesh=new Mesh(geom,obj.material.clone())
+    result.add(mesh)
+    return
+   }
    const vein=/vein|vena|pulmonary.trunk|pulmonary.arter/.test(name),artery=/arter|aort/.test(name)
-   const color=metricKey==='Brain'?'#c89086':metricKey==='Lungs'?'#ae655f':vein?'#504264':artery?'#b24e40':'#923c3e'
+   const color=metricKey==='Brain'?'#c89086':vein?'#504264':artery?'#b24e40':'#923c3e'
    const material=new MeshPhysicalMaterial({color,roughness:.39,clearcoat:.62,clearcoatRoughness:.22})
    material.onBeforeCompile=shader=>{
     shader.vertexShader='varying vec3 tissuePosition;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ntissuePosition=position;')
