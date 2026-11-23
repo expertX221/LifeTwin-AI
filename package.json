@@ -29,7 +29,13 @@
     "framer-motion": "^11.18.2",
     "ajv": "^8.17.1",
     "i18next": "^24.2.0",
-    "react-i18next": "^15.4.0"
+    "react-i18next": "^15.4.0",
+    "@fontsource/noto-sans": "^5.2.0",
+    "@fontsource/noto-sans-devanagari": "^5.2.0",
+    "@fontsource/noto-sans-telugu": "^5.2.0",
+    "@fontsource/noto-sans-tamil": "^5.2.0",
+    "@fontsource/noto-sans-malayalam": "^5.2.0",
+    "@fontsource/noto-sans-kannada": "^5.2.0"
   },
   "devDependencies": {
     "@types/react": "18.3.0",

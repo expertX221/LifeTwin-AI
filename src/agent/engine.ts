@@ -12,7 +12,8 @@ export function detect(s:string):Locale{
  for(const [l,re] of Object.entries({hi:/[\u0900-\u097f]|seene|saans|bimari|behosh/,te:/[\u0c00-\u0c7f]|gunde|oopiri/,ta:/[\u0b80-\u0bff]|nenju vali|moochu/,ml:/[\u0d00-\u0d7f]|nenju vedana/,kn:/[\u0c80-\u0cff]|ede novu/}))if(re.test(s))return l as Locale
  return 'en'
 }
-export function route(input:string){const s=normalize(input)
+export type Route='safety'|'medical'|'data'|'general'
+export function route(input:string):Route{const s=normalize(input)
  for(const key of ['safety','medical','data'] as const)if(Object.values(languages).some(l=>l[key].split('|').some(term=>s.includes(term))))return key
  return 'general'
 }

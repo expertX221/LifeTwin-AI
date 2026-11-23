@@ -11,7 +11,7 @@ export default function Agent(){
  const lang=locale==='auto'?detect(q):locale
  useEffect(()=>{try{E(read())}catch{F('Local records could not be read.')}},[])
  const {t}=useTranslation('translation',{i18n:ui,lng:lang})
- async function ask(){W(true);F('');try{let intent;if(model!=='rules'){try{intent=await classifyOffline(q,model==='browser')}catch{F('Local model unavailable. Using on-device rules.')}}const data=read().filter(e=>e.kind==='log').map(e=>({id:e.id,date:e.date,bpm:e.bpm!,quality:e.quality!}));A(answer(q,lang,region,data,intent))}catch{F('Local records unavailable.')}finally{W(false)}}
+ async function ask(){W(true);F('');try{let intent:Awaited<ReturnType<typeof classifyOffline>>|undefined;if(model!=='rules'){try{intent=await classifyOffline(q,model==='browser')}catch{F('Local model unavailable. Using on-device rules.')}}const data=read().filter(e=>e.kind==='log').map(e=>({id:e.id,date:e.date,bpm:e.bpm!,quality:e.quality!}));A(answer(q,lang,region,data,intent))}catch{F('Local records unavailable.')}finally{W(false)}}
  function propose(a:Action){try{if(!valid(a))throw Error();F('');P(a)}catch{F('Check the date, label, BPM and quality before continuing.')}}
  function approve(){if(!pending)return;try{E(commit(pending));P(null);T('');A('')}catch{F('Could not save the change on this device.')}}
  function exportData(){const url=URL.createObjectURL(new Blob([JSON.stringify(read(),null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='lifetime-records.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}
