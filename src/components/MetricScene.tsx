@@ -3,6 +3,7 @@ import {Canvas,useFrame} from '@react-three/fiber'
 import {OrbitControls,useGLTF} from '@react-three/drei'
 import {Box3,BufferAttribute,Group,Mesh,MeshPhysicalMaterial,Vector3} from 'three'
 import {useTracking} from '../store/tracking'
+
 export type Metric='Heart'|'Lungs'|'Brain'
 type Motion=(phase:number)=>number
 export const animations:Record<Metric,Motion>={
@@ -11,6 +12,7 @@ export const animations:Record<Metric,Motion>={
  Brain:()=>0
 }
 type Props={metricKey:Metric;modelPath:string;animate:Motion;value?:number;summary:string}
+
 function Tissue({metricKey,modelPath,animate,value}:Props){
  const {scene}=useGLTF(modelPath)
  const phase=useRef(0)
@@ -27,23 +29,51 @@ function Tissue({metricKey,modelPath,animate,value}:Props){
     result.add(mesh)
     return
    }
-   const vein=/vein|vena|pulmonary.trunk|pulmonary.arter/.test(name),artery=/arter|aort/.test(name)
-   const color=metricKey==='Brain'?'#c89086':vein?'#504264':artery?'#b24e40':'#923c3e'
-   const material=new MeshPhysicalMaterial({color,roughness:.39,clearcoat:.62,clearcoatRoughness:.22})
+
+   const vein=/vein|vena|pulmonary.trunk|pulmonary.arter/.test(name)
+   const artery=/arter|aort/.test(name)
+   const isBrain=metricKey==='Brain'
+   const color=isBrain?'#edb2ad':vein?'#542a36':artery?'#a91e1a':'#941b19'
+   const material=new MeshPhysicalMaterial({
+    color,
+    roughness:isBrain?.48:.27,
+    metalness:0,
+    clearcoat:isBrain?.24:.9,
+    clearcoatRoughness:isBrain?.38:.16,
+    sheen:isBrain?.28:.04,
+    sheenColor:isBrain?'#ffd2cc':'#d84a3e',
+    sheenRoughness:.55
+   })
    material.onBeforeCompile=shader=>{
-    shader.vertexShader='varying vec3 tissuePosition;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ntissuePosition=position;')
-    shader.fragmentShader='varying vec3 tissuePosition;\n'+shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
+    shader.vertexShader='varying vec3 tissuePosition;\n'+shader.vertexShader.replace(
+     '#include <begin_vertex>',
+     '#include <begin_vertex>\ntissuePosition=position;'
+    )
+    const surface=isBrain?`
+      float fineGrain=sin(q.x*118.0+sin(q.y*71.0)*1.7+q.z*43.0);
+      float softMottle=sin(q.x*8.0+sin(q.y*6.0)*1.2)*sin(q.z*9.0+q.y*4.0);
+      float tissueVariation=0.018*fineGrain+0.035*softMottle;
+      diffuseColor.rgb*=1.0+tissueVariation;
+      roughnessFactor=clamp(roughnessFactor+0.025*softMottle,0.38,0.68);
+    `:`
+      float fiber=sin(q.x*88.0+q.y*31.0+sin(q.z*17.0)*3.0);
+      float mottling=sin(q.x*13.0+sin(q.y*9.0))*sin(q.z*11.0+q.y*5.0);
+      diffuseColor.rgb*=1.0+0.018*fiber+0.045*mottling;
+      roughnessFactor=clamp(roughnessFactor+0.025*mottling,0.18,0.42);
+    `
+    shader.fragmentShader='varying vec3 tissuePosition;\n'+shader.fragmentShader.replace(
+     '#include <color_fragment>',
+     `#include <color_fragment>
       vec3 q=tissuePosition;
-      float grain=sin(q.y*165.+q.x*81.+sin(q.z*19.+q.y*8.)*4.);
-      float broad=sin(q.x*11.+sin(q.z*9.))*sin(q.y*13.);
-      diffuseColor.rgb*=1.+.035*grain+.055*broad;`)
+      ${surface}`
+    )
    }
    if(metricKey==='Heart'){
     const pos=geom.attributes.position
     const offsets=new Float32Array(pos.count*3)
     for(let i=0;i<pos.count;i++){
      const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i)
-     const weight=Math.min(1,Math.max(0,(.8-y)/1.6)),angle=.145*weight, squeeze=1-.075*weight
+     const weight=Math.min(1,Math.max(0,(.8-y)/1.6)),angle=.145*weight,squeeze=1-.075*weight
      offsets[i*3]=(x*Math.cos(angle)-z*Math.sin(angle))*squeeze-x
      offsets[i*3+1]=.13*weight
      offsets[i*3+2]=(z*Math.cos(angle)+x*Math.sin(angle))*squeeze-z
@@ -51,8 +81,14 @@ function Tissue({metricKey,modelPath,animate,value}:Props){
     geom.morphTargetsRelative=true
     geom.morphAttributes.position=[new BufferAttribute(offsets,3)]
    }
-   const mesh=new Mesh(geom,material);result.add(mesh)
-  });return result
+   const mesh=new Mesh(geom,material)
+   result.add(mesh)
+  })
+  // The supplied brain STL is oriented crown-first; show its lateral profile.
+  // The supplied heart STL has its long axis on Z; rotate it upright for an anterior-style view.
+  if(metricKey==='Brain') result.rotation.y=Math.PI/2
+  if(metricKey==='Heart') result.rotation.x=-Math.PI/2
+  return result
  },[scene,metricKey])
  useEffect(()=>()=>{group.traverse(obj=>{if(obj instanceof Mesh){obj.geometry.dispose();obj.material.dispose()}})},[group])
  useFrame((_,dt)=>{
@@ -65,5 +101,24 @@ function Tissue({metricKey,modelPath,animate,value}:Props){
  })
  return <primitive object={group}/>
 }
-class Boundary extends Component<{children:ReactNode},{failed:boolean}>{state={failed:false};static getDerivedStateFromError(){return {failed:true}};render(){return this.state.failed?<p>3D rendering unavailable. Readings remain available below.</p>:this.props.children}}
-export function MetricScene(props:Props){return <div className="scene" role="img" aria-label={props.summary}><Boundary key={props.metricKey}><Canvas dpr={[1,2]} camera={{position:[0,.12,4.4],fov:39}} gl={{antialias:true,alpha:true}}><hemisphereLight args={['#ffe6d6','#6f414e',1.15]}/><directionalLight position={[-2,3,4]} intensity={3.1}/><directionalLight position={[2,1,-2]} color="#a9cbdf" intensity={3.4}/><pointLight position={[1,-.4,2]} color="#ffb59e" intensity={4}/><Suspense fallback={null}><Tissue {...props}/></Suspense><OrbitControls enablePan={false} enableDamping minDistance={2.2} maxDistance={6} autoRotate autoRotateSpeed={.35}/></Canvas></Boundary></div>}
+
+class Boundary extends Component<{children:ReactNode},{failed:boolean}>{
+ state={failed:false}
+ static getDerivedStateFromError(){return {failed:true}}
+ render(){return this.state.failed?<p>3D rendering unavailable. Readings remain available below.</p>:this.props.children}
+}
+
+export function MetricScene(props:Props){
+ return <div className="scene" role="img" aria-label={props.summary}>
+  <Boundary key={props.metricKey}>
+   <Canvas dpr={[1,2]} camera={{position:[0,.12,4.4],fov:39}} gl={{antialias:true,alpha:true}}>
+    <hemisphereLight args={['#ffe6d6','#6f414e',1.15]}/>
+    <directionalLight position={[-2,3,4]} intensity={3.1}/>
+    <directionalLight position={[2,1,-2]} color="#a9cbdf" intensity={3.4}/>
+    <pointLight position={[1,-.4,2]} color="#ffb59e" intensity={4}/>
+    <Suspense fallback={null}><Tissue {...props}/></Suspense>
+    <OrbitControls enablePan={false} enableDamping minDistance={2.2} maxDistance={6} autoRotate autoRotateSpeed={.35}/>
+   </Canvas>
+  </Boundary>
+ </div>
+}
