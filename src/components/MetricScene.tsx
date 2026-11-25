@@ -69,10 +69,10 @@ function Tissue({metricKey,modelPath,animate,value}:Props){
    material.onBeforeCompile=shader=>{
     shader.vertexShader=shader.vertexShader.replace(
      '#include <common>',
-     '#include <common>\\nvarying vec3 tissuePosition;'
+     '#include <common>\nvarying vec3 tissuePosition;'
     ).replace(
      '#include <begin_vertex>',
-     '#include <begin_vertex>\\ntissuePosition=position;'
+     '#include <begin_vertex>\ntissuePosition=position;'
     )
     const tissueFunctions=`
       varying vec3 tissuePosition;
@@ -110,7 +110,7 @@ function Tissue({metricKey,modelPath,animate,value}:Props){
     `
     shader.fragmentShader=shader.fragmentShader.replace(
      '#include <common>',
-     '#include <common>\\n'+tissueFunctions
+     '#include <common>\n'+tissueFunctions
     ).replace(
      '#include <color_fragment>',
      `#include <color_fragment>
@@ -126,7 +126,7 @@ function Tissue({metricKey,modelPath,animate,value}:Props){
          ${roughnessMax}
        );`
     )
-   }}
+   }
    if(metricKey==='Heart'){
     const pos=geom.attributes.position
     const offsets=new Float32Array(pos.count*3)
