@@ -65,7 +65,7 @@ function Tissue({metricKey,modelPath,animate,value}:Props){
     `
    const roughnessMin = isBrain ? 0.38 : 0.18
    const roughnessMax = isBrain ? 0.68 : 0.42
-   const detailScale = isBrain ? 110.0 : 125.0
+   const detailScale = isBrain ? '110.0' : '125.0'
    material.onBeforeCompile=shader=>{
     shader.vertexShader=shader.vertexShader.replace(
      '#include <common>',
