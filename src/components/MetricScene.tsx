@@ -24,6 +24,8 @@ function Tissue({metricKey,modelPath,animate,value}:Props){
    if(!(obj instanceof Mesh)||!obj.geometry)return
    const name=(obj.name+' '+obj.parent?.name+' '+obj.material?.name).toLowerCase()
    const geom=obj.geometry.clone().applyMatrix4(obj.matrixWorld).translate(-center.x,-center.y,-center.z).scale(scale,scale,scale)
+   // The optimized brain and heart GLBs omit normals; generate them so lit materials render with their intended colors.
+   if(!geom.attributes.normal)geom.computeVertexNormals()
    if(metricKey==='Lungs'){
     const mesh=new Mesh(geom,obj.material.clone())
     result.add(mesh)
