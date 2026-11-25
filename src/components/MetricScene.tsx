@@ -46,42 +46,87 @@ function Tissue({metricKey,modelPath,animate,value}:Props){
     sheenColor:isBrain?'#ffd2cc':'#d84a3e',
     sheenRoughness:.55
    })
-   material.onBeforeCompile=shader=>{
-    shader.vertexShader='varying vec3 tissuePosition;\n'+shader.vertexShader.replace(
-     '#include <begin_vertex>',
-     '#include <begin_vertex>\ntissuePosition=position;'
-    )
-    const surface=isBrain?`
-      float fineGrain=sin(q.x*118.0+sin(q.y*71.0)*1.7+q.z*43.0);
-      float softMottle=sin(q.x*8.0+sin(q.y*6.0)*1.2)*sin(q.z*9.0+q.y*4.0);
-      float tissueVariation=0.018*fineGrain+0.035*softMottle;
-      diffuseColor.rgb*=1.0+tissueVariation;
-    `:`
-      float fiber=sin(q.x*88.0+q.y*31.0+sin(q.z*17.0)*3.0);
-      float mottling=sin(q.x*13.0+sin(q.y*9.0))*sin(q.z*11.0+q.y*5.0);
-      diffuseColor.rgb*=1.0+0.018*fiber+0.045*mottling;
-      
+   const surface = isBrain ? `
+      float broad = fbm3(q * 6.5);
+      float folds = noise3(q * 26.0);
+      float pores = noise3(q * 110.0);
+      float sulcus = sin(q.x * 34.0 + sin(q.y * 21.0 + q.z * 8.0) * 1.6);
+      float crease = smoothstep(0.70, 0.96, abs(sulcus));
+      float variation = (broad - 0.5) * 0.12 + (folds - 0.5) * 0.075 + (pores - 0.5) * 0.028;
+      diffuseColor.rgb *= 0.97 + variation - crease * 0.035;
+    ` : `
+      float broad = fbm3(q * 8.0);
+      float fibers = noise3(q * 38.0);
+      float pores = noise3(q * 125.0);
+      float muscle = sin(q.x * 30.0 + sin(q.y * 17.0 + q.z * 10.0) * 1.7);
+      float striae = smoothstep(0.55, 0.94, abs(muscle));
+      float variation = (broad - 0.5) * 0.18 + (fibers - 0.5) * 0.10 + (pores - 0.5) * 0.035;
+      diffuseColor.rgb *= 0.95 + variation - striae * 0.055;
     `
-    shader.fragmentShader = 'varying vec3 tissuePosition;\n' +
-  shader.fragmentShader.replace(
-    '#include <color_fragment>',
-    `#include <color_fragment>
-      vec3 q = tissuePosition;
-      ${surface}`
-  );
-
-shader.fragmentShader = shader.fragmentShader.replace(
-  '#include <roughnessmap_fragment>',
-  `#include <roughnessmap_fragment>
-    float tissueMottling =
-      sin(tissuePosition.x * 13.0 + sin(tissuePosition.y * 9.0)) *
-      sin(tissuePosition.z * 11.0 + tissuePosition.y * 5.0);
-    roughnessFactor = clamp(
-      roughnessFactor + 0.025 * tissueMottling,
-      ${isBrain ? "0.38, 0.68" : "0.18, 0.42"}
-    );`
-);
-   }
+   const roughnessMin = isBrain ? 0.38 : 0.18
+   const roughnessMax = isBrain ? 0.68 : 0.42
+   const detailScale = isBrain ? 110.0 : 125.0
+   material.onBeforeCompile=shader=>{
+    shader.vertexShader=shader.vertexShader.replace(
+     '#include <common>',
+     '#include <common>\\nvarying vec3 tissuePosition;'
+    ).replace(
+     '#include <begin_vertex>',
+     '#include <begin_vertex>\\ntissuePosition=position;'
+    )
+    const tissueFunctions=`
+      varying vec3 tissuePosition;
+      float hash31(vec3 p) {
+        return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453);
+      }
+      float noise3(vec3 p) {
+        vec3 i = floor(p);
+        vec3 f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        float n000 = hash31(i);
+        float n100 = hash31(i + vec3(1.0, 0.0, 0.0));
+        float n010 = hash31(i + vec3(0.0, 1.0, 0.0));
+        float n110 = hash31(i + vec3(1.0, 1.0, 0.0));
+        float n001 = hash31(i + vec3(0.0, 0.0, 1.0));
+        float n101 = hash31(i + vec3(1.0, 0.0, 1.0));
+        float n011 = hash31(i + vec3(0.0, 1.0, 1.0));
+        float n111 = hash31(i + vec3(1.0, 1.0, 1.0));
+        float x00 = mix(n000, n100, f.x);
+        float x10 = mix(n010, n110, f.x);
+        float x01 = mix(n001, n101, f.x);
+        float x11 = mix(n011, n111, f.x);
+        return mix(mix(x00, x10, f.y), mix(x01, x11, f.y), f.z);
+      }
+      float fbm3(vec3 p) {
+        float total = 0.0;
+        float amplitude = 0.5;
+        for (int octave = 0; octave < 4; octave++) {
+          total += noise3(p) * amplitude;
+          p = p * 2.03 + 17.1;
+          amplitude *= 0.5;
+        }
+        return total;
+      }
+    `
+    shader.fragmentShader=shader.fragmentShader.replace(
+     '#include <common>',
+     '#include <common>\\n'+tissueFunctions
+    ).replace(
+     '#include <color_fragment>',
+     `#include <color_fragment>
+       vec3 q = tissuePosition;
+       ${surface}`
+    ).replace(
+     '#include <roughnessmap_fragment>',
+     `#include <roughnessmap_fragment>
+       float surfaceDetail = noise3(tissuePosition * ${detailScale}) - 0.5;
+       roughnessFactor = clamp(
+         roughnessFactor + surfaceDetail * 0.12,
+         ${roughnessMin},
+         ${roughnessMax}
+       );`
+    )
+   }}
    if(metricKey==='Heart'){
     const pos=geom.attributes.position
     const offsets=new Float32Array(pos.count*3)
