@@ -1,4 +1,4 @@
-export type Sample = { t:number; ir?:number; red?:number; bpm?:number; oxygen?:number; motion?:boolean; contact?:boolean }
+export type Sample = { t:number; ir?:number; red?:number; bpm?:number; oxygen?:number; motion?:boolean; contact?:boolean; sleepSeconds?:number; sleepEfficiency?:number; sleepStage?:number; sleepingBpm?:number }
 const median = (v:number[]) => {const s=v.slice().sort((a,b)=>a-b); return s.length ? (s[(s.length-1)>>1]+s[s.length>>1])/2 : 0}
 // Timestamps are milliseconds. Restart the analysis window after a FIFO gap.
 export function peaks(samples:Sample[], channel:'ir'|'red'='ir'):number[] {
