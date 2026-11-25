@@ -54,7 +54,6 @@ function Tissue({metricKey,modelPath,animate,value}:Props){
       float softMottle=sin(q.x*8.0+sin(q.y*6.0)*1.2)*sin(q.z*9.0+q.y*4.0);
       float tissueVariation=0.018*fineGrain+0.035*softMottle;
       diffuseColor.rgb*=1.0+tissueVariation;
-      roughnessFactor=clamp(roughnessFactor+0.025*softMottle,0.38,0.68);
     `:`
       float fiber=sin(q.x*88.0+q.y*31.0+sin(q.z*17.0)*3.0);
       float mottling=sin(q.x*13.0+sin(q.y*9.0))*sin(q.z*11.0+q.y*5.0);
@@ -77,8 +76,7 @@ shader.fragmentShader = shader.fragmentShader.replace(
       sin(tissuePosition.z * 11.0 + tissuePosition.y * 5.0);
     roughnessFactor = clamp(
       roughnessFactor + 0.025 * tissueMottling,
-      0.18,
-      0.42
+      ${isBrain ? "0.38, 0.68" : "0.18, 0.42"}
     );`
 );
    }
