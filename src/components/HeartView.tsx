@@ -1,12 +1,13 @@
 import {Circuit} from './Circuit'
 import {WatchFile} from './WatchFile'
-import {useState} from 'react'
+import {useEffect,useState} from 'react'
+import {useGLTF} from '@react-three/drei'
 import {LineChart,Line,ResponsiveContainer} from 'recharts'
 import {MetricScene,animations,type Metric} from './MetricScene'
 import {Waveform} from './Waveform'
 import {useTracking,start,stop} from '../store/tracking'
 const models:Record<Metric,string>={Heart:'heart',Lungs:'lungs-textured',Brain:'brain'}
-export function HeartView(){const s=useTracking(),[kind,setKind]=useState('Demo sensor'),[metric,setMetric]=useState<Metric>('Heart'),[demo,setDemo]=useState(0)
+export function HeartView(){useEffect(()=>{const id=window.setTimeout(()=>{for(const name of Object.values(models))useGLTF.preload('/models/'+name+'.glb')},0);return()=>window.clearTimeout(id)},[]);const s=useTracking(),[kind,setKind]=useState('Demo sensor'),[metric,setMetric]=useState<Metric>('Heart'),[demo,setDemo]=useState(0)
  const config={Heart:[0,0,'BPM'],Lungs:[8,24,'breaths/min'],Brain:[0,100,'focus score']}[metric]
  const model=models[metric],value=Number(config[0])+(Number(config[1])-Number(config[0]))*demo/100
  return <><nav>{(Object.keys(models) as Metric[]).map(k=><button aria-pressed={k===metric} key={k} onClick={()=>{setMetric(k);setDemo(55)}}>{k==='Heart'?'Heart tracking':k}</button>)}</nav><header><small>PERSONAL INTELLIGENCE LAB</small><h1>{metric==='Heart'?'Heart tracking':metric+' explorer'}</h1></header><section className="layout"><article><div className="cap"><b>{metric==='Heart'?'Cardiac anatomy':metric+' model'}</b><small>3D VIEW</small></div><MetricScene metricKey={metric} modelPath={'/models/'+model+'.glb'} animate={animations[metric]} value={value} summary={metric==='Heart'?`Heart rate ${s.bpm??'unavailable'} BPM, ${s.trust}`:`${metric} demo ${Math.round(value)} ${config[2]}`}/><footer>Drag to orbit · Scroll or pinch to zoom · <a href="/models/LICENSES.md">{metric==='Lungs'?'Custom lung model':'HuBMAP / HRA · CC BY 4.0'}</a></footer></article>
