@@ -35,15 +35,17 @@ object PairingStore {
         context.getSharedPreferences(prefs, Context.MODE_PRIVATE).edit().putString(item, packed).apply()
     }
 
-    fun load(context: Context): JSONObject? = try {
-        val packed = context.getSharedPreferences(prefs, Context.MODE_PRIVATE).getString(item, null) ?: return null
-        val parts = packed.split('.', limit = 2)
-        if (parts.size != 2) return null
-        val decoder = Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.DECRYPT_MODE, key(), javax.crypto.spec.GCMParameterSpec(128, Base64.decode(parts[0], decoder)))
-        JSONObject(String(cipher.doFinal(Base64.decode(parts[1], decoder)), Charsets.UTF_8))
-    } catch (_: Exception) { null }
+    fun load(context: Context): JSONObject? {
+        return try {
+            val packed = context.getSharedPreferences(prefs, Context.MODE_PRIVATE).getString(item, null) ?: return null
+            val parts = packed.split('.', limit = 2)
+            if (parts.size != 2) return null
+            val decoder = Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.DECRYPT_MODE, key(), javax.crypto.spec.GCMParameterSpec(128, Base64.decode(parts[0], decoder)))
+            JSONObject(String(cipher.doFinal(Base64.decode(parts[1], decoder)), Charsets.UTF_8))
+        } catch (_: Exception) { null }
+    }
 
     fun clear(context: Context) {
         context.getSharedPreferences(prefs, Context.MODE_PRIVATE).edit().remove(item).apply()
