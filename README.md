@@ -23,6 +23,11 @@ Choose **Bluetooth watch** and connect from desktop Chrome or Edge on this HTTPS
 
 Live readings currently stay in the open browser session and are not saved to a cloud database. A physical device test is still needed to confirm which Bluetooth services this particular watch firmware exposes. Standard Bluetooth heart-rate readings do not include the raw red/IR waveform. The app is for personal exploration and education, not a medical device and does not diagnose conditions.
 
+## Android Health Connect sync
+The Dashboard includes an encrypted phone-sync panel. The Android companion reads only heart rate, oxygen saturation and sleep records after the user grants those Health Connect permissions. It encrypts a compact latest-reading snapshot on the phone with a per-pair key; the server stores only ciphertext. The dashboard decrypts it in the browser. `migrations/001_health_connect_sync.sql` creates the Neon table, and the deployment needs a `DATABASE_URL` environment variable.
+
+To install the companion, download the `lifetwin-health-sync-debug` artifact from the GitHub Actions run named **Build Android health sync app**. On the dashboard choose **Pair Android phone**, scan its QR in **LifeTwin Health Sync** on Android, then grant the three requested Health Connect permissions. Keep the companion open for updates every 30 seconds. If Health Connect offers and grants background access, Android also checks about every 15 minutes. Fastrack Smart World must sync the watch records into Health Connect first; the website shows the source measurement timestamps, and cannot receive a measurement before that sync occurs.
+
 ## Components
 src/components/HeartView.tsx composes the monitor and controls. MetricScene.tsx hosts the orbitable scene and animation registry. Waveform.tsx renders the selected channel and marks. src/data/sources.ts defines the common source interface and bounded buffers. src/store/tracking.ts coordinates source changes, freshness, trend and signal trust. src/analytics/bpm.ts contains the pure detector and interval aggregation.
 

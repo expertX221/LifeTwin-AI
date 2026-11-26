@@ -35,7 +35,9 @@
     "@fontsource/noto-sans-telugu": "^5.2.0",
     "@fontsource/noto-sans-tamil": "^5.2.0",
     "@fontsource/noto-sans-malayalam": "^5.2.0",
-    "@fontsource/noto-sans-kannada": "^5.2.0"
+    "@fontsource/noto-sans-kannada": "^5.2.0",
+    "@neondatabase/serverless": "^1.0.2",
+    "qrcode.react": "^4.2.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.0",
